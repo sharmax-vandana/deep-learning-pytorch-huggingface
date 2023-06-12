@@ -89,9 +89,9 @@ def create_and_prepare_model(
 
 
 def format_dolly(sample):
-    instruction = f"### Instruction\n{sample['text']}"
+    instruction = f"### Instruction\n{sample['instruction']}"
     context = f"### Context\n{sample['context']}" if len(sample["context"]) > 0 else None
-    response = f"### Answer\n{sample['answer']}"
+    response = f"### Answer\n{sample['response']}"
     # join all the parts together
     prompt = "\n\n".join([i for i in [instruction, context, response] if i is not None])
     return prompt
@@ -117,7 +117,6 @@ class ScriptArguments:
     max_seq_length: Optional[int] = field(
         default=2048, metadata={"help": "The maximum sequence length for the SFTTainer to group together."}
     )
-    local_rank: Optional[int] = field(default=-1, metadata={"help": "Used for multi-gpu"})
 
 
 def main():
@@ -125,7 +124,7 @@ def main():
     script_args, training_args = parser.parse_args_into_dataclasses()
 
     # load model and tokenizer
-    model, peft_config, tokenizer = create_and_prepare_model(script_args)
+    model, peft_config, tokenizer = create_and_prepare_model(script_args.model_id)
     # deactivate cache
     model.config.use_cache = (
         False if training_args.gradient_checkpointing else True,
@@ -158,7 +157,7 @@ if __name__ == "__main__":
 
 # python run_clm_fsdp_lora.py \
 #  --model_id tiiuae/falcon-7b \
-#  --dataset_id "databricks/databricks-dolly-15k"
+#  --dataset_id "databricks/databricks-dolly-15k" \
 #  --per_device_train_batch_size 1 \
 #  --epochs 1 \
 #  --optimizer adamw_apex_fused \
