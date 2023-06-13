@@ -132,7 +132,7 @@ def main():
     ]
     model, peft_config, tokenizer = create_and_prepare_model(script_args.model_id, target_modules=target_modules)
     # deactivate cache
-    model.config.use_cache = (
+    model.use_cache = (
         False if training_args.gradient_checkpointing else True,
     )  # this is needed for gradient checkpointing
     # load dataset
