@@ -62,7 +62,7 @@ class PeftSavingCallback(TrainerCallback):
 
 
 def create_and_prepare_model(
-    model_id, use_4bit=False, use_8bit=False
+    model_id, use_4bit=False, use_8bit=False, target_modules=None
 ) -> Tuple[PreTrainedModel, LoraConfig, PreTrainedTokenizer]:
     model = AutoModelForCausalLM.from_pretrained(model_id, device_map="auto", trust_remote_code=True)
 
@@ -71,7 +71,7 @@ def create_and_prepare_model(
         lora_dropout=0.05,
         bias="none",
         task_type="CAUSAL_LM",
-        target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
+        target_modules=target_modules,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
@@ -124,7 +124,13 @@ def main():
     script_args, training_args = parser.parse_args_into_dataclasses()
 
     # load model and tokenizer
-    model, peft_config, tokenizer = create_and_prepare_model(script_args.model_id)
+    target_modules = [
+        "query_key_value",
+        "dense",
+        "dense_h_to_4h",
+        "dense_4h_to_h",
+    ]
+    model, peft_config, tokenizer = create_and_prepare_model(script_args.model_id, target_modules=target_modules)
     # deactivate cache
     model.config.use_cache = (
         False if training_args.gradient_checkpointing else True,
@@ -144,6 +150,9 @@ def main():
         args=training_args,
         callbacks=[PeftSavingCallback()],
     )
+    # print parameters
+    trainer.model.print_trainable_parameters()
+
     # train
     trainer.train()
 
@@ -160,7 +169,7 @@ if __name__ == "__main__":
 #  --dataset_id "databricks/databricks-dolly-15k" \
 #  --per_device_train_batch_size 1 \
 #  --epochs 1 \
-#  --optimizer adamw_apex_fused \
+#  --optimizer adamw_fused \
 #  --lr 2e-4 \
 #  --gradient_checkpointing True \
 #  --bf16 True \
