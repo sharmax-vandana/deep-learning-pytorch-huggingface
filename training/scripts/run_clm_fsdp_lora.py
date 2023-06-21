@@ -5,8 +5,7 @@ from typing import List, Optional, Tuple, cast
 
 import torch
 import torch.distributed as dist
-from datasets import load_dataset
-from peft import PeftConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training, LoraConfig
+from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training, LoraConfig, set_peft_model_state_dict
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -42,20 +41,20 @@ class PeftSavingCallback(TrainerCallback):
             os.remove(os.path.join(checkpoint_path, "pytorch_model.bin"))
 
 
-# class LoadBestPeftModelCallback(TrainerCallback):
-#     def on_train_end(
-#         self,
-#         args: TrainingArguments,
-#         state: TrainerState,
-#         control: TrainerControl,
-#         **kwargs,
-#     ):
-#         print(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
-#         best_model_path = os.path.join(state.best_model_checkpoint, "adapter_model.bin")
-#         adapters_weights = torch.load(best_model_path)
-#         model = kwargs["model"]
-#         set_peft_model_state_dict(model, adapters_weights)
-#         return control
+class LoadBestPeftModelCallback(TrainerCallback):
+    def on_train_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs,
+    ):
+        print(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
+        best_model_path = os.path.join(state.best_model_checkpoint, "adapter_model.bin")
+        adapters_weights = torch.load(best_model_path)
+        model = kwargs["model"]
+        set_peft_model_state_dict(model, adapters_weights)
+        return control
 
 
 ########################################################################
@@ -163,6 +162,8 @@ def create_and_prepare_model(
         )
         # initialize peft model
         model = get_peft_model(model, peft_config)
+        # print parameters
+        model.print_trainable_parameters()
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=trust_remote_code)
@@ -173,9 +174,9 @@ def create_and_prepare_model(
 
 
 ########################################################################
-# This is a fully working simple example to use trl's SFTTrainer.
+# This is a fully working simple example to use peft with FSDP, Deepspeed
 #
-# This example fine-tunes Falcon 40B on the Dolly dataset.
+# This example fine-tunes Falcon 7B on the Dolly dataset.
 #
 ########################################################################
 
@@ -264,9 +265,9 @@ def main():
         print((f"Resized dataset to {len(dataset)} samples."))
 
     # add callbacks
-    callbacks = []
+    callbacks = None
     if script_args.target_modules is not None:
-        callbacks.append(PeftSavingCallback())
+        callbacks = [PeftSavingCallback()]
 
     # create trainer
     trainer = Trainer(
@@ -277,10 +278,10 @@ def main():
         data_collator=default_data_collator,
         callbacks=callbacks,
     )
-    # print parameters
-    trainer.model.print_trainable_parameters()
 
     # train model
+    print("Start training...")
+    os.makedirs(training_args.output_dir, exist_ok=True)
     if get_last_checkpoint(training_args.output_dir) is not None:
         # logger.info("***** continue training *****")
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
@@ -300,21 +301,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# python run_clm_fsdp_lora.py \
-#  --model_id tiiuae/falcon-7b \
-#  --dataset_id "databricks/databricks-dolly-15k" \
-#  --per_device_train_batch_size 1 \
-#  --epochs 1 \
-#  --optimizer adamw_fused \
-#  --lr 2e-4 \
-#  --gradient_checkpointing True \
-#  --bf16 True \
-#  --tf32 True \
-#  --output_dir ./tmp \
-#  --logging_steps 10
-
-# \
-#  --fsdp "full_shard auto_wrap" \
-#  --fsdp_transformer_layer_cls_to_wrap "DecoderLayer"

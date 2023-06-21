@@ -10,9 +10,7 @@ git+https://github.com/huggingface/peft.git@189a6b8e357ecda05ccde13999e4c3575959
 tensorboard 
 einops 
 loralib
-# deepspeed
 deepspeed
-mpi4py
 ```
 
 
@@ -94,10 +92,33 @@ torchrun --nproc_per_node 1 run_clm.py \
   --bf16 True 
 ```
 
+```
+export PATH="/usr/local/cuda-11.7/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-11.7/lib64:$LD_LIBRARY_PATH"
+```
+
+Multi-GPU Deepspeed OFFLOAD
+
+```bash
+torchrun --nproc_per_node 4 training/scripts/run_clm_fsdp_lora.py \
+  --model_id tiiuae/falcon-7b \
+  --trust_remote_code True \
+  --dataset_path "data" \
+  --output_dir ./tmp \
+  --per_device_train_batch_size 1 \
+  --max_steps 25 \
+  --learning_rate 2e-4 \
+  --gradient_checkpointing True \
+  --bf16 True \
+  --tf32 True \
+  --logging_steps 10 \
+  --deepspeed "training/configs/ds_flan_t5_z3_offload_bf16.json"
+```
+
 Multi-GPU LORA Deepspeed OFFLOAD
 
 ```bash
-torchrun --nproc_per_node 1 training/scripts/run_clm_fsdp_lora.py \
+torchrun --nproc_per_node 4 training/scripts/run_clm_fsdp_lora.py \
   --model_id tiiuae/falcon-7b \
   --trust_remote_code True \
   --dataset_path "data" \
@@ -105,7 +126,6 @@ torchrun --nproc_per_node 1 training/scripts/run_clm_fsdp_lora.py \
   --output_dir ./tmp \
   --per_device_train_batch_size 1 \
   --max_steps 25 \
-  --optim adamw_torch_fused \
   --learning_rate 2e-4 \
   --gradient_checkpointing True \
   --bf16 True \
@@ -117,20 +137,54 @@ torchrun --nproc_per_node 1 training/scripts/run_clm_fsdp_lora.py \
 
 Multi-GPU LORA Deepspeed
 
+4xA10G ✅
+
 ```bash
-torchrun --nproc_per_node 1 training/scripts/run_clm_fsdp_lora.py \
+torchrun --nproc_per_node 4 training/scripts/run_clm_fsdp_lora.py \
   --model_id tiiuae/falcon-7b \
   --trust_remote_code True \
   --dataset_path "data" \
   --target_modules "query_key_value" \
   --output_dir ./tmp \
   --per_device_train_batch_size 1 \
+  --max_steps 55 \
+  --learning_rate 2e-4 \
+  --gradient_checkpointing True \
+  --bf16 True \
+  --tf32 True \
+  --logging_steps 10 \
+  --save_steps 15 \
+  --deepspeed "training/configs/ds_z3_bf16.json"
+```
+
+
+Multi-GPU Deepspeed
+
+```bash
+torchrun --nproc_per_node 4 training/scripts/run_clm_fsdp_lora.py \
+  --model_id tiiuae/falcon-7b \
+  --trust_remote_code True \
+  --dataset_path "data" \
+  --output_dir ./tmp \
+  --per_device_train_batch_size 1 \
   --max_steps 25 \
-  --optim adamw_torch_fused \
   --learning_rate 2e-4 \
   --gradient_checkpointing True \
   --bf16 True \
   --tf32 True \
   --logging_steps 10 \
   --deepspeed "training/configs/ds_flan_t5_z3_config_bf16.json"
+```
+
+
+# Deepspeed Trouble shooting
+
+Training gets stuck 
+https://github.com/microsoft/DeepSpeed/issues/2816
+```
+Using /home/ubuntu/.cache/torch_extensions/py39_cu117 as PyTorch extensions root...
+```
+remove it 
+```
+rm -rf /home/ubuntu/.cache/torch_extensions/py39_cu117
 ```
