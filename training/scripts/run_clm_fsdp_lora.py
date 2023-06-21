@@ -99,6 +99,7 @@ def create_and_prepare_model(
     gradient_checkpointing=False,
     torch_dtype=torch.float32,
     fsdp=False,
+    deepspeed=False,
     **kwargs,
 ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
     print("Creating and preparing model...")
@@ -111,7 +112,8 @@ def create_and_prepare_model(
     print(f"kwargs: {kwargs}")
 
     device_map = "auto"
-    if fsdp:
+    bnb_config = None
+    if fsdp or deepspeed:
         device_map = None
         torch_dtype = None
         bnb_config = None
@@ -250,6 +252,7 @@ def main():
         **vars(script_args),
         torch_dtype=torch_dtype,
         fsdp=True if len(training_args.fsdp) > 0 else False,
+        deepspeed=True if training_args.deepspeed else False,
         gradient_checkpointing=training_args.gradient_checkpointing,
     )
 
@@ -260,24 +263,22 @@ def main():
         dataset = dataset.shuffle().select(range(script_args.max_train_samples))
         print((f"Resized dataset to {len(dataset)} samples."))
 
+    # add callbacks
+    callbacks = []
+    if script_args.target_modules is not None:
+        callbacks.append(PeftSavingCallback())
+
     # create trainer
     trainer = Trainer(
         model=model,
         train_dataset=dataset,
         tokenizer=tokenizer,
         args=training_args,
-        callbacks=[PeftSavingCallback()],
+        data_collator=default_data_collator,
+        callbacks=callbacks,
     )
     # print parameters
     trainer.model.print_trainable_parameters()
-
-    # Create Trainer instance
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=dataset,
-        data_collator=default_data_collator,
-    )
 
     # train model
     if get_last_checkpoint(training_args.output_dir) is not None:
@@ -292,6 +293,9 @@ def main():
         # save model and tokenizer for easy inference
         safe_save_model_for_hf_trainer(trainer, tokenizer, training_args.output_dir)
         dist.barrier()
+
+    # save model and tokenizer for easy inference
+    trainer.save_model(training_args.output_dir)
 
 
 if __name__ == "__main__":
