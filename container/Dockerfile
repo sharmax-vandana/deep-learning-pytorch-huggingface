@@ -12,7 +12,7 @@ LABEL maintainer="Philipp Schmid"
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1 
 
-
+# Install apt packages
 RUN apt-get update \
     && apt-get -y upgrade --only-upgrade systemd openssl cryptsetup \
     && apt-get install -y \
@@ -30,12 +30,12 @@ RUN apt-get update \
     && apt-get clean autoremove --yes \
     && rm -rf /var/lib/{apt,dpkg,cache,log}
 
-# update pip
+# Update pip
 RUN python3 -m pip install --no-cache-dir --upgrade pip
 
-# remove old torch and 
+# Remove old torch, tensorrt, transformers engine, apex and 
 # Install latest release PyTorch (PyTorch must be installed before any DeepSpeed c++/cuda ops.)
-RUN python3 -m pip uninstall -y torch torchvision torchaudio torch-tensorrt \
+RUN python3 -m pip uninstall -y torch torchvision torchaudio torch-tensorrt transformer-engine apex \
  && python3 -m pip install --no-cache-dir -U torch==${PYTORCH} torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/${CUDA}
 
 # Install DeepSpeed

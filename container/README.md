@@ -4,9 +4,11 @@ This folder contains Dockerfiles for PyTorch Deep Learning Containers including 
 
 ## Dockerfiles
 
-| Container                         | Versions                                             | URI         |
-| --------------------------------- | ---------------------------------------------------- | ----------- |
-| [Pytorch Deepspeed](./Dockerfile) | torch==2.0.1, transformers==4.30.2, deepspeed==0.9.5 | `philschmi` |
+| Container                                     | Versions                                                                       | URI                                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| [Pytorch Deepspeed](./Dockerfile)             | torch==2.0.1, transformers==4.30.2, deepspeed==0.9.5                           | `philschmi/huggingface-pytorch:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8`          |
+| [PEFT](./Dockerfile.peft)                     | torch==2.0.1, transformers==4.30.2, deepspeed==0.9.5 peft                      | `philschmi/huggingface-pytorch-peft:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8`     |
+| [PEFT + bitsandbytest](./Dockerfile.peft_bnb) | torch==2.0.1, transformers==4.30.2, deepspeed==0.9.5 peft bitsandbytes==0.39.0 | `philschmi/huggingface-pytorch-peft-bnb:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8` |
 
 ## Getting Started
 
@@ -64,6 +66,34 @@ docker run --rm -it --init \
   user and group ID. Optional, but is useful for writing files with correct
   ownership.
 
+### Example 
+
+Below is an example on how to run the container for peft int4 single gpu training. `pwd=root`
+
+  
+  
+```bash
+docker run --rm -it --init \
+  --gpus=all \
+  --ipc=host \
+  --user="$(id -u):$(id -g)" \
+  --volume="$PWD:/workspace" \
+  philschmi/huggingface-pytorch-peft-bnb:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8 python training/scripts/run_clm_fsdp_lora.py \
+  --model_id tiiuae/falcon-7b \
+  --trust_remote_code True \
+  --dataset_path "data" \
+  --use_4bit True \
+  --target_modules "query_key_value" "dense" "dense_h_to_4h" "dense_4h_to_h" \
+  --output_dir ./tmp \
+  --per_device_train_batch_size 2 \
+  --max_steps 25 \
+  --optim adamw_torch_fused \
+  --learning_rate 2e-4 \
+  --gradient_checkpointing True \
+  --bf16 True \
+  --tf32 True \
+  --logging_steps 10
+```
 
 ## Deriving your own images
 
@@ -79,5 +109,33 @@ RUN sudo apt-get update \
  && sudo rm -rf /var/lib/apt/lists/*
 
 # Install OpenCV from PyPI.
-RUN pip install opencv-python==4.5.1.48
+RUN  python3 -m pip install --upgrade --no-cache-dir -U opencv-python==4.5.1.48
+```
+
+build your image
+
+```bash
+docker build -t my-image -f Dockerfile.my-image .
+```
+
+## Other images 
+
+### PEFT 
+
+This image is based on the base image and includes libraries for PEFT. 
+
+```bash
+docker build -t philschmi/huggingface-pytorch-peft:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8 -t philschmi/huggingface-pytorch-peft:latest  -f Dockerfile.peft .
+docker push philschmi/huggingface-pytorch-peft:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8
+docker push philschmi/huggingface-pytorch-peft:latest
+```
+
+### PEFT & Bitsandbytes
+
+This image is based on the base image and includes libraries for PEFT for int4 & int8 training with bitsandbytest. 
+
+```bash
+docker build -t philschmi/huggingface-pytorch-peft-bnb:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8 -t philschmi/huggingface-pytorch-peft-bnb:latest  -f Dockerfile.peft_bnb .
+docker push philschmi/huggingface-pytorch-peft-bnb:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8
+docker push philschmi/huggingface-pytorch-peft-bnb:latest
 ```

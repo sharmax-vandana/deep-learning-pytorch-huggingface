@@ -1,0 +1,5 @@
+FROM philschmi/huggingface-pytorch:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8
+
+# Install peft and bitsandbytes
+RUN  python3 -m pip install --upgrade --no-cache-dir -U git+https://github.com/huggingface/peft.git@189a6b8e357ecda05ccde13999e4c35759596a67 einops loralib bitsandbytes==0.39.0
+

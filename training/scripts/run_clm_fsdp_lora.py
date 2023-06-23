@@ -232,7 +232,9 @@ class ScriptArguments:
 
 def main():
     parser = HfArgumentParser([ScriptArguments, TrainingArguments])
-    script_args, training_args = cast(tuple[ScriptArguments, TrainingArguments], parser.parse_args_into_dataclasses())
+    script_args, training_args = parser.parse_args_into_dataclasses()
+    script_args = cast(ScriptArguments, script_args)
+    training_args = cast(TrainingArguments, training_args)
 
     # script checks
     if len(training_args.fsdp) > 0 and script_args.target_modules is not None:
