@@ -71,12 +71,10 @@ docker run --rm -it --init \
 Below is an example on how to run the container for peft int4 single gpu training. `pwd=root`
 
   
-  
 ```bash
 docker run --rm -it --init \
   --gpus=all \
   --ipc=host \
-  --user="$(id -u):$(id -g)" \
   --volume="$PWD:/workspace" \
   philschmi/huggingface-pytorch-peft-bnb:2.0.1-transformers4.30.2-deepspeed0.9.5-cuda11.8 python training/scripts/run_clm_fsdp_lora.py \
   --model_id tiiuae/falcon-7b \

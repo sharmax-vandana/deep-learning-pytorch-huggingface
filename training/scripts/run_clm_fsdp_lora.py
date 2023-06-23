@@ -23,7 +23,48 @@ from datasets import load_from_disk
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 from transformers.trainer_utils import get_last_checkpoint
 
-# logger = logging.getLogger(__name__)
+
+########################################################################
+#
+# Utility methods for script in general, e.g. logging
+#
+########################################################################
+
+import logging
+import sys
+from transformers.utils import logging as trfs_logging
+from datasets.utils import logging as datasets_logging
+
+
+def setup_logger() -> logging.Logger:
+    # get local rank
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+    # create logger
+    logger = logging.getLogger(__name__)
+
+    # Setup logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+
+    if local_rank != 0:
+        # disable logging for non-master processes
+        print(f"Disabling logging for non-master process with local rank {local_rank}.")
+        logging.disable(logging.CRITICAL)
+        return logger
+    else:
+        log_level = logging.INFO
+        # set the main code and the modules it uses to the same log-level according to the node
+        logger.setLevel(log_level)
+        datasets_logging.set_verbosity(log_level)
+        trfs_logging.set_verbosity(log_level)
+        return logger
+
+
+logger = setup_logger()
 
 ########################################################################
 #
@@ -49,7 +90,7 @@ class LoadBestPeftModelCallback(TrainerCallback):
         control: TrainerControl,
         **kwargs,
     ):
-        print(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
+        logger.info(f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
         best_model_path = os.path.join(state.best_model_checkpoint, "adapter_model.bin")
         adapters_weights = torch.load(best_model_path)
         model = kwargs["model"]
@@ -101,14 +142,14 @@ def create_and_prepare_model(
     deepspeed=False,
     **kwargs,
 ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
-    print("Creating and preparing model...")
-    print(f"Model ID: {model_id}")
-    print(f"Use 4bit: {use_4bit}")
-    print(f"Use 8bit: {use_8bit}")
-    print(f"Target modules: {target_modules}")
-    print(f"Trust remote code: {trust_remote_code}")
-    print(f"Gradient checkpointing: {gradient_checkpointing}")
-    print(f"kwargs: {kwargs}")
+    logger.info("Creating and preparing model...")
+    logger.info(f"Model ID: {model_id}")
+    logger.info(f"Use 4bit: {use_4bit}")
+    logger.info(f"Use 8bit: {use_8bit}")
+    logger.info(f"Target modules: {target_modules}")
+    logger.info(f"Trust remote code: {trust_remote_code}")
+    logger.info(f"Gradient checkpointing: {gradient_checkpointing}")
+    logger.info(f"kwargs: {kwargs}")
 
     device_map = "auto"
     bnb_config = None
@@ -162,8 +203,8 @@ def create_and_prepare_model(
         )
         # initialize peft model
         model = get_peft_model(model, peft_config)
-        # print parameters
-        model.print_trainable_parameters()
+        # logger.info parameters
+        model.logger.info_trainable_parameters()
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=trust_remote_code)
@@ -264,7 +305,7 @@ def main():
     # load dataset from disk and tokenizer
     if script_args.max_train_samples is not None:
         dataset = dataset.shuffle().select(range(script_args.max_train_samples))
-        print((f"Resized dataset to {len(dataset)} samples."))
+        logger.info((f"Resized dataset to {len(dataset)} samples."))
 
     # add callbacks
     callbacks = None
@@ -282,7 +323,7 @@ def main():
     )
 
     # train model
-    print("Start training...")
+    logger.info("Start training...")
     os.makedirs(training_args.output_dir, exist_ok=True)
     if get_last_checkpoint(training_args.output_dir) is not None:
         # logger.info("***** continue training *****")
