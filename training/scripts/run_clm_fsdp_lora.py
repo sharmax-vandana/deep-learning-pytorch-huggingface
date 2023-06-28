@@ -194,6 +194,7 @@ def create_and_prepare_model(
 
     # create LoraConfig from kwargs
     if target_modules is not None:
+        logger.info(f"Using LoRA with target modules: {target_modules}")
         # prepare model for training
         if use_4bit or use_8bit:
             model = prepare_model_for_kbit_training(model)
