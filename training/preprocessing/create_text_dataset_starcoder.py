@@ -15,6 +15,7 @@ remainder = {"input_ids": [], "attention_mask": [], "token_type_ids": []}
 
 # empty list to save remainder from batches to use in next batch
 def chunk_dataset(dataset, chunk_length=2048):
+    print(f"Chunking dataset into chunks of {chunk_length} tokens.")
     def chunk(sample, chunk_length=chunk_length):
         # define global remainder variable to save remainder from batches to use in next batch
         global remainder
@@ -41,7 +42,7 @@ def chunk_dataset(dataset, chunk_length=2048):
 
     # tokenize and chunk dataset
     lm_dataset = dataset.map(
-        partial(chunk, chunk_length=2048),
+        partial(chunk, chunk_length=chunk_length),
         batched=True,
     )
     print(f"Total number of samples: {len(lm_dataset)}")
