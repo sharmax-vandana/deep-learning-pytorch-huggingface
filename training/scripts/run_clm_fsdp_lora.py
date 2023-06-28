@@ -189,6 +189,7 @@ def create_and_prepare_model(
 
     # enable gradient checkpointing when quantization is disabled
     if gradient_checkpointing and use_8bit is False and use_4bit is False:
+        logger.info("Enabling gradient checkpointing.")
         model.gradient_checkpointing_enable()
 
     # create LoraConfig from kwargs
