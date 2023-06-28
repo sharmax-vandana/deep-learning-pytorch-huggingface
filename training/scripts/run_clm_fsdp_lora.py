@@ -22,6 +22,7 @@ from transformers import TrainerCallback, TrainingArguments, TrainerState, Train
 from datasets import load_from_disk
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 from transformers.trainer_utils import get_last_checkpoint
+from huggingface_hub import login
 
 
 ########################################################################
@@ -65,6 +66,12 @@ def setup_logger() -> logging.Logger:
 
 
 logger = setup_logger()
+
+token = os.environ.get("HF_TOKEN", None)
+if token:
+    logger.info(f"Logging into the Hugging Face Hub with token {token[:10]}...")
+    login(token=token)
+
 
 ########################################################################
 #
@@ -204,7 +211,7 @@ def create_and_prepare_model(
         # initialize peft model
         model = get_peft_model(model, peft_config)
         # logger.info parameters
-        model.logger.info_trainable_parameters()
+        model.print_trainable_parameters()
 
     # load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=trust_remote_code)

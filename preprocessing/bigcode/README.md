@@ -2,6 +2,8 @@
 
 This is our implementation of near deduplication for BigCode dataset [original repo](hhttps://github.com/bigcode-project/bigcode-dataset/tree/main/near_deduplication).
 
+conda create --name hf python=3.10
+
 ### Setup
 
 #### Local 
@@ -21,7 +23,7 @@ And make sure you have git-lfs installed.
 #### Docker
 
 ```bash
-docker build -t bigcode-deduplication -f Dockerfile .
+sudo docker build -t bigcode-deduplication -f Dockerfile .
 ```
 
 
@@ -54,7 +56,7 @@ python minhash_deduplication.py --dataset codeparrot/codeparrot-clean-valid \
     --cache-dir .cache \
     --min-ngram-size 5 \
     --output cleaned \
-    --hf-token $(cat ~/.huggingface/token)
+    --hf-token $(cat ~/.cache/huggingface/token)
 # For details on the arguments, see the help message
 python minhash_deduplication.py --help
 ```
