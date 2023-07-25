@@ -3,13 +3,19 @@
 # FLASH ATTENTION: 
 #
 ########################################################################
+import os
+from startcoder_flash_attn_patch import replace_starcoder_attn_with_flash_attn
 
-from .startcoder_flash_attn_patch import replace_starcoder_attn_with_flash_attn
+if os.environ.get("USE_FLASH_ATTN", "0") == "1":
+    replace_starcoder_attn_with_flash_attn()
 
-replace_starcoder_attn_with_flash_attn()
+
+
+
+########################################################################
+
 
 # https://gist.github.com/younesbelkada/8bb36332cd2147c070b52ab25878c78f
-import os
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, cast
 

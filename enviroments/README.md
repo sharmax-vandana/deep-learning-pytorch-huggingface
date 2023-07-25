@@ -41,14 +41,17 @@ conda env create --file=/fsx/philipp/deep-learning-pytorch-huggingface/enviromen
 
 ## Test Flash attention env
 
+FIXME: not working yet
+
 ```bash
 conda env create --file=flash-deepspeed.yaml
 conda activate ds-flash
 pip install flash-attn --no-build-isolation
+python -c 'import flash_attn'
 ds_report
 ```
 
-## Manual Flash attention env 
+## [Working] Manual Flash attention env 
 
 ```bash
 conda create --name flash python=3.10 -c conda-forge
