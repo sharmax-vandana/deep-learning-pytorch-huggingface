@@ -59,6 +59,7 @@ def parse_args():
     parser.add_argument("--text_column", type=str, default="text", help="column name for text data.")
     parser.add_argument("--trust_remote_code", type=bool, default=False, help="Path to save the processed dataset.")
     parser.add_argument("--model_max_length", type=int, default=2048, help="Path to save the processed dataset.")
+    parser.add_argument("--hub_repo", type=str, default="", help="Path to save the processed dataset.")
     parser.add_argument(
         "--hf_token",
         type=str,
@@ -89,6 +90,10 @@ def create_dataset(args):
 
     # save dataset
     lm_dataset.save_to_disk(args.save_dataset_path)
+    
+    if len(args.hub_repo) > 0:
+        # push to hub
+        lm_dataset.push_to_hub("philschmid/", use_auth_token=args.hf_token)
 
 
 def main():

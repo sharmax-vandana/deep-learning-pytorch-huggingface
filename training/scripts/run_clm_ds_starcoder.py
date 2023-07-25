@@ -1,3 +1,13 @@
+########################################################################
+#
+# FLASH ATTENTION: 
+#
+########################################################################
+
+from .startcoder_flash_attn_patch import replace_starcoder_attn_with_flash_attn
+
+replace_starcoder_attn_with_flash_attn()
+
 # https://gist.github.com/younesbelkada/8bb36332cd2147c070b52ab25878c78f
 import os
 from dataclasses import dataclass, field
@@ -321,34 +331,36 @@ def main():
     if script_args.target_modules is not None:
         callbacks = [PeftSavingCallback()]
 
-    # create trainer
-    trainer = Trainer(
-        model=model,
-        train_dataset=dataset,
-        tokenizer=tokenizer,
-        args=training_args,
-        data_collator=default_data_collator,
-        callbacks=callbacks,
-    )
+    print(model.module)
 
-    # train model
-    logger.info("Start training...")
-    os.makedirs(training_args.output_dir, exist_ok=True)
-    if get_last_checkpoint(training_args.output_dir) is not None:
-        # logger.info("***** continue training *****")
-        last_checkpoint = get_last_checkpoint(training_args.output_dir)
-        trainer.train(resume_from_checkpoint=last_checkpoint)
-    else:
-        trainer.train()
+    # # create trainer
+    # trainer = Trainer(
+    #     model=model,
+    #     train_dataset=dataset,
+    #     tokenizer=tokenizer,
+    #     args=training_args,
+    #     data_collator=default_data_collator,
+    #     callbacks=callbacks,
+    # )
 
-    # save model
-    if len(training_args.fsdp) > 0:
-        # save model and tokenizer for easy inference
-        safe_save_model_for_hf_trainer(trainer, tokenizer, training_args.output_dir)
-        dist.barrier()
+    # # train model
+    # logger.info("Start training...")
+    # os.makedirs(training_args.output_dir, exist_ok=True)
+    # if get_last_checkpoint(training_args.output_dir) is not None:
+    #     # logger.info("***** continue training *****")
+    #     last_checkpoint = get_last_checkpoint(training_args.output_dir)
+    #     trainer.train(resume_from_checkpoint=last_checkpoint)
+    # else:
+    #     trainer.train()
 
-    # save model and tokenizer for easy inference
-    trainer.save_model(training_args.output_dir)
+    # # save model
+    # if len(training_args.fsdp) > 0:
+    #     # save model and tokenizer for easy inference
+    #     safe_save_model_for_hf_trainer(trainer, tokenizer, training_args.output_dir)
+    #     dist.barrier()
+
+    # # save model and tokenizer for easy inference
+    # trainer.save_model(training_args.output_dir)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,25 @@
+# conda env create --file=deepspeed.yaml
+name: ds-flash
+channels:
+- conda-forge
+- nvidia
+- pytorch
+dependencies:
+- python=3.10
+- cudatoolkit=11.7
+- pytorch
+- pytorch-cuda=11.7
+- gxx_linux-64==11.* # needed to compile 
+- tensorboard
+- pip:
+  - transformers[sklearn,sentencepiece]==4.31.0
+  - accelerate==0.21.0
+  - datasets==2.14.0
+  - deepspeed==0.9.5
+  - peft==0.4.0
+  - evaluate
+  - einops
+  - loralib
+  - ninja
+  - packaging
+  # - flash-attn==2.0.1 need to install afterwards with pip install

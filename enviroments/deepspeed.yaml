@@ -8,11 +8,11 @@ dependencies:
 - pytorch::pytorch=2.0.1=py3.9_cuda11.8_cudnn8.7.0_0 # conda search -c pytorch pytorch=2*
 - tensorboard
 - pip:
-  - transformers[sklearn,sentencepiece,audio,vision]==4.30.2
-  - accelerate==0.20.3
+  - transformers[sklearn,sentencepiece,audio,vision]==4.31.0
+  - accelerate==0.21.0
   - evaluate
-  - datasets==2.13.0
+  - datasets==2.14.0
   - deepspeed==0.9.5
-  - git+https://github.com/huggingface/peft.git@189a6b8e357ecda05ccde13999e4c35759596a67
+  - peft==0.4.0
   - einops
   - loralib
