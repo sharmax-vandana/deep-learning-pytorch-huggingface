@@ -4,10 +4,12 @@
 #
 ########################################################################
 import os
-from startcoder_flash_attn_patch import replace_starcoder_attn_with_flash_attn
+from startcoder_flash_attn_patch import starcoder_attn_with_flash_attn
+
+print("USE_FLASH_ATTN", os.environ.get("USE_FLASH_ATTN"))
 
 if os.environ.get("USE_FLASH_ATTN", "0") == "1":
-    replace_starcoder_attn_with_flash_attn()
+    starcoder_attn_with_flash_attn()
 
 
 
@@ -337,36 +339,34 @@ def main():
     if script_args.target_modules is not None:
         callbacks = [PeftSavingCallback()]
 
-    print(model.module)
+    # create trainer
+    trainer = Trainer(
+        model=model,
+        train_dataset=dataset,
+        tokenizer=tokenizer,
+        args=training_args,
+        data_collator=default_data_collator,
+        callbacks=callbacks,
+    )
 
-    # # create trainer
-    # trainer = Trainer(
-    #     model=model,
-    #     train_dataset=dataset,
-    #     tokenizer=tokenizer,
-    #     args=training_args,
-    #     data_collator=default_data_collator,
-    #     callbacks=callbacks,
-    # )
+    # train model
+    logger.info("Start training...")
+    os.makedirs(training_args.output_dir, exist_ok=True)
+    if get_last_checkpoint(training_args.output_dir) is not None:
+        # logger.info("***** continue training *****")
+        last_checkpoint = get_last_checkpoint(training_args.output_dir)
+        trainer.train(resume_from_checkpoint=last_checkpoint)
+    else:
+        trainer.train()
 
-    # # train model
-    # logger.info("Start training...")
-    # os.makedirs(training_args.output_dir, exist_ok=True)
-    # if get_last_checkpoint(training_args.output_dir) is not None:
-    #     # logger.info("***** continue training *****")
-    #     last_checkpoint = get_last_checkpoint(training_args.output_dir)
-    #     trainer.train(resume_from_checkpoint=last_checkpoint)
-    # else:
-    #     trainer.train()
+    # save model
+    if len(training_args.fsdp) > 0:
+        # save model and tokenizer for easy inference
+        safe_save_model_for_hf_trainer(trainer, tokenizer, training_args.output_dir)
+        dist.barrier()
 
-    # # save model
-    # if len(training_args.fsdp) > 0:
-    #     # save model and tokenizer for easy inference
-    #     safe_save_model_for_hf_trainer(trainer, tokenizer, training_args.output_dir)
-    #     dist.barrier()
-
-    # # save model and tokenizer for easy inference
-    # trainer.save_model(training_args.output_dir)
+    # save model and tokenizer for easy inference
+    trainer.save_model(training_args.output_dir)
 
 
 if __name__ == "__main__":

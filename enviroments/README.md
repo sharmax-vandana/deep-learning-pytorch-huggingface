@@ -62,4 +62,10 @@ conda activate flash
 pip install ninja packaging
 pip install flash-attn --no-build-isolation
 pip install transformers[sklearn,sentencepiece]==4.31.0 accelerate==0.21.0 datasets==2.14.0 deepspeed==0.9.5 peft==0.4.0 evaluate einops loralib
+```
+
+verify env 
+```bash
+python -c 'import flash_attn'
+ds_report
 ``````

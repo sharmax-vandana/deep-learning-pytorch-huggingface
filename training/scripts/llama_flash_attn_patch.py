@@ -8,7 +8,7 @@ from transformers.models.llama.modeling_llama import apply_rotary_pos_emb
 
 from einops import rearrange
 
-from flash_attn.flash_attn_interface import flash_attn_unpadded_qkvpacked_func
+from flash_attn.flash_attn_interface import flash_attn_varlen_qkvpacked_func
 from flash_attn.bert_padding import unpad_input, pad_input
 
 # COPIED from https://github.com/allenai/open-instruct/blob/main/open_instruct/llama_flash_attn_monkey_patch.py
@@ -85,7 +85,7 @@ def forward(
         x_unpad = rearrange(
             x_unpad, "nnz (three h d) -> nnz three h d", three=3, h=nheads
         )
-        output_unpad = flash_attn_unpadded_qkvpacked_func(
+        output_unpad = flash_attn_varlen_qkvpacked_func(
             x_unpad, cu_q_lens, max_s, 0.0, softmax_scale=None, causal=True
         )
         output = rearrange(
