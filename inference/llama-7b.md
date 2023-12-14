@@ -1,15 +1,14 @@
 # Llama 2 inference 
 
 ```bash
-model=meta-llama/Llama-2-7b-chat-hf
+model=HuggingFaceH4/zephyr-7b-beta
 token=hf_xxx # replace with your token, which access to the repo
 num_shard=1
-max_input_length=1562
-max_total_tokens=2048
+max_input_length=3500
+max_total_tokens=4096
 
 docker run --gpus all -ti -p 8080:80 \
   -e MODEL_ID=$model \
- -e HUGGING_FACE_HUB_TOKEN=$token \
   -e NUM_SHARD=$num_shard \
   -e MAX_INPUT_LENGTH=$max_input_length \
   -e MAX_TOTAL_TOKENS=$max_total_tokens \
