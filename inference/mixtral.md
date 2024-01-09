@@ -3,8 +3,8 @@
 ```bash
 model=TheBloke/Mixtral-8x7B-Instruct-v0.1-GPTQ
 num_shard=1
-max_input_length=3500
-max_total_tokens=4096
+max_input_length=1512
+max_total_tokens=2048
 quantize=gptq
 
 docker run --gpus all -ti -p 8080:80 \
@@ -14,7 +14,7 @@ docker run --gpus all -ti -p 8080:80 \
   -e MAX_INPUT_LENGTH=$max_input_length \
   -e MAX_TOTAL_TOKENS=$max_total_tokens \
   -e QUANTIZE=$quantize \
-   ghcr.io/huggingface/text-generation-inference:1.3.1
+   ghcr.io/huggingface/text-generation-inference:1.3.2
 ```
 
 send test request 
